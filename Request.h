@@ -17,9 +17,6 @@ void ParseRequest() {
 	if (getline(ss, token, COMMAND_DELIMITER)) {
 		if (token == "unlock_achievement") {
 			if (getline(ss, token, COMMAND_DELIMITER)) {
-				if (!SteamUserStats()->ClearAchievement(token.c_str())) {
-					cout << "Error clearing achievement\n";
-				}
 				if (!SteamUserStats()->SetAchievement(token.c_str())) {
 					cout << "Error setting achievement\n";
 				}

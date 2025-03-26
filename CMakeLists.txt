@@ -10,8 +10,9 @@ project ("AVIAO3")
 include_directories("include")
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/win64)
 
-add_definitions(-DGAMEEXECUTABLE=\"quakespasm-sdl2.exe\")
-add_definitions(-DSTEAM_APP_ID=480)
+add_definitions(-DGAMEEXECUTABLE=\"AVIAO3GAME.EXE\")
+add_definitions(-DSTEAM_APP_ID=3191050)
+add_definitions(-DTESTES)
 
 add_executable (AVIAO3 "Pipe.c" "Pipe.h" "Game.h" "LauncherGUI.h" "LauncherGUI.cpp" "Request.h" resource.rc)
 

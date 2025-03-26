@@ -8,6 +8,7 @@ using namespace std;
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 640
 
+#ifdef TESTES
 int main(int argc, char* argv[]) {
 	LauncherGUI launcher(GetModuleHandle(NULL));
 	if (!launcher.Initialize()) {
@@ -16,6 +17,21 @@ int main(int argc, char* argv[]) {
 	launcher.Run();
 	return 0;
 }
+#else
+int main(int argc, char* argv[]) {
+	HWND consoleWindow = GetConsoleWindow();
+	if (consoleWindow != NULL) {
+		ShowWindow(consoleWindow, SW_HIDE);
+	}
+
+	LauncherGUI launcher(GetModuleHandle(NULL));
+	if (!launcher.Initialize()) {
+		return 1;
+	}
+	launcher.Run();
+	return 0;
+}
+#endif
 
 LauncherGUI::LauncherGUI(HINSTANCE hInstance) : hInstance(hInstance), hwndMain(NULL), hComboBox(NULL), hLaunchButton(NULL), hBackground(NULL) {}
 
@@ -232,6 +248,13 @@ void LauncherGUI::LaunchGameWithLanguage() {
 			cerr << "Error connecting pipe\n";
 			return;
 		}
+
+#ifdef TESTES
+		if (!SteamUserStats()->ResetAllStats(true)) {
+			cerr << "Error resetting stats and achievements";
+			return;
+		}
+#endif
 
 		while (Pipe_Read()) {
 			SteamAPI_RunCallbacks();
