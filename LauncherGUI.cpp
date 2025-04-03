@@ -177,7 +177,7 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 				NULL
 			);
 			SendMessage(pThis->hComboBox, CB_ADDSTRING, 0, (LPARAM)"Português");
-			SendMessage(pThis->hComboBox, CB_ADDSTRING, 0, (LPARAM)"English");
+			//SendMessage(pThis->hComboBox, CB_ADDSTRING, 0, (LPARAM)"English");
 			SendMessage(pThis->hComboBox, CB_SETCURSEL, 0, 0);
 
 			pThis->hLaunchButton = CreateWindow(
@@ -233,7 +233,8 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 void LauncherGUI::LaunchGameWithLanguage() {
 	int index = SendMessage(hComboBox, CB_GETCURSEL, 0, 0);
 	if (index != CB_ERR) {
-		string language_file = (index == 0) ? "loc_english.txt" : "loc_portuguese.txt";
+		//(index to get the dropdown index)
+		string language_file = "loc_portuguese.txt";
 		string executable_path = GAMEEXECUTABLE;
 		string command_line = executable_path + " -language " + language_file;
 
