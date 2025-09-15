@@ -401,3 +401,4 @@ FodyWeavers.xsd
 
 include/steam/
 lib/
+steam_appid.txt
