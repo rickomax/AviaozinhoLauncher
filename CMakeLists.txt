@@ -38,7 +38,7 @@ add_definitions(-DREGISTRYKEY=L\"Software\\Joeveno\\Aviao\")
 add_definitions(-DPIPE_NAME=\"\\\\\\\\.\\\\pipe\\\\Aviaozinho\")
 add_definitions(-DSTEAM_APP_ID=3191050)
 
-add_executable (AVIAO3 "Pipe.c"  "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp" resource.rc)
+add_executable (AVIAO3 "Pipe.c" "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp" resource.rc)
 
 target_link_libraries(AVIAO3 steam_api64)
 
