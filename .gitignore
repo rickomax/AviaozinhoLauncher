@@ -400,4 +400,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 include/steam/
-lib
+lib/
