@@ -149,7 +149,7 @@ bool Uploader::Preflight() {
         return false;
     }
 
-    // ---------- NEW: scan for forbidden files ----------
+    // ---------- scan for forbidden files ----------
     {
         std::vector<fs::path> offenders;
         if (FindForbiddenFiles(contentPath, offenders)) {
