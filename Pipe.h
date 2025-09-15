@@ -1,11 +1,9 @@
-#ifndef PIPE_H
-#define PIPE_H
+#pragma once
 
 #include <windows.h>
 #include <stdio.h>
 
 #define PIPE_BUFFER_SIZE 1024
-#define PIPE_NAME "\\\\.\\pipe\\Aviaozinho"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,5 +21,4 @@ extern "C" {
 	void Pipe_Close(void);
 #ifdef __cplusplus
 }
-#endif
 #endif

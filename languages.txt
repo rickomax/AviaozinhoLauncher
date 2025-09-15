@@ -1,0 +1,9 @@
+Português (Portuguese),loc_portuguese.txt
+Inglês (English),loc_english.txt
+Portuenglish,loc_portuenglish.txt
+xxxx,xxxx
+yyyy,yyyy
+zzzz,zzzz
+jjjj,jjjj
+kkkk,kkkk
+vvvv,vvvv

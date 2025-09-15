@@ -1,28 +1,46 @@
-#ifndef GAME_H
-#define GAME_H
+#pragma once
 
 #include <windows.h>
 #include <iostream>
+#include <string>
 #include <filesystem>
 
-STARTUPINFO si;
-PROCESS_INFORMATION pi;
+STARTUPINFOA si{};
+PROCESS_INFORMATION pi{};
 
-bool LaunchGame(const char* gamePath) {
-	if (!gamePath) {
-		std::cerr << "Game executable is not defined\n";
-		return false;
-	}
-	ZeroMemory(&si, sizeof(si));
-	if (!CreateProcess(NULL, (LPSTR)gamePath, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
-		std::cerr << "Failed to launch game executable\n";
-		return false;
-	}
-	return true;
+bool LaunchGame(const std::string& gamePath)
+{
+    if (gamePath.empty()) {
+        std::cerr << "Game executable is not defined\n";
+        return false;
+    }
+
+    // Make a writable copy because CreateProcessA wants a modifiable char buffer.
+    std::string cmdLine = gamePath;
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+
+    if (!CreateProcessA(
+        nullptr,                      // application name (use command line instead)
+        cmdLine.data(),               // modifiable command line buffer
+        nullptr, nullptr,             // security attributes
+        TRUE,                         // inherit handles
+        0,                            // creation flags
+        nullptr,                      // environment (inherit)
+        CURRENT_DIRECTORY,            // starting directory
+        &si,
+        &pi))
+    {
+        std::cerr << "Failed to launch game executable, error: " << GetLastError() << "\n";
+        return false;
+    }
+
+    return true;
 }
 
-void CloseGame() {
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
+void CloseGame()
+{
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
 }
-#endif

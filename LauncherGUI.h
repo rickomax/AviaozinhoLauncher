@@ -1,5 +1,4 @@
-#ifndef LAUNCHER_GUI_H
-#define LAUNCHER_GUI_H
+#pragma once
 
 #include <windows.h>
 #include <string>
@@ -8,6 +7,8 @@
 #include "Game.h"
 #include "Pipe.h"
 #include "Request.h"
+#include "ConfigReader.h"
+#include "Registry.h"
 
 class LauncherGUI {
 public:
@@ -22,10 +23,9 @@ private:
     HWND hComboBox;
     HWND hLaunchButton;
     HBITMAP hBackground;
+    filesystem::path workingDirectory;
     bool InitializeSteamAndPipe();
     void Cleanup();
     void LaunchGameWithLanguage();
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
-
-#endif // LAUNCHER_GUI_H
