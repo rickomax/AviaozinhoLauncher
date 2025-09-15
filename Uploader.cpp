@@ -1,4 +1,3 @@
-// Uploader.cpp
 #include "Uploader.h"
 #include <algorithm>
 #include <sstream>
@@ -65,7 +64,7 @@ static bool FindForbiddenFiles(const fs::path& root,
     std::error_code ec;
     fs::directory_options opts = fs::directory_options::skip_permission_denied;
 
-    // Quick ìhas filesî check and recursive walk
+    // Quick ‚Äúhas files‚Äù check and recursive walk
     for (fs::recursive_directory_iterator it(root, opts, ec), end; !ec && it != end; it.increment(ec))
     {
         if (ec) break;
@@ -150,7 +149,7 @@ bool Uploader::Preflight() {
         return false;
     }
 
-    // ---------- NEW: scan for forbidden files ----------
+    // ---------- scan for forbidden files ----------
     {
         std::vector<fs::path> offenders;
         if (FindForbiddenFiles(contentPath, offenders)) {

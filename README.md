@@ -7,3 +7,4 @@ This is a custom launcher for **QuakeSpasm**, designed specifically for the proj
 - Integrates with the QuakeSpasm engine.
 - Includes a **pipe-based communication system** that connects directly to the game.
 - Parses in-game messages to **unlock Steam achievements and update stats** in real-time.
+- Connects to Steam workshop, allowing to list, insert and download workshop items.
