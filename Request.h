@@ -22,34 +22,6 @@
 
 using namespace std;
 
-static string JsonEscape(string_view s) {
-	std::string out;
-	out.reserve(s.size() + 2);
-	out.push_back('"');
-	for (unsigned char c : s) {
-		switch (c) {
-		case '\"': out += "\\\""; break;
-		case '\\': out += "\\\\"; break;
-		case '\b': out += "\\b";  break;
-		case '\f': out += "\\f";  break;
-		case '\n': out += "\\n";  break;
-		case '\r': out += "\\r";  break;
-		case '\t': out += "\\t";  break;
-		default:
-			if (c < 0x20) {
-				std::ostringstream oss;
-				oss << "\\u" << std::uppercase << std::hex
-					<< std::setw(4) << std::setfill('0') << static_cast<int>(c);
-				out += oss.str();
-			}
-			else {
-				out.push_back(static_cast<char>(c));
-			}
-		}
-	}
-	out.push_back('"');
-	return out;
-}
 
 std::optional<std::string>
 FindSingleBspFilename(const std::filesystem::path& folder)
@@ -240,17 +212,12 @@ void ParseRequest(HWND hwndMain) {
 		);
 
 		for (WorkshopItemInfo& mod : mods) {
-			std::string created = ToIso8601UTC(mod.timeCreated);
-			Pipe_Write(
-				"{\"id\":\"%llu\",\"title\":%s,\"owner\":%s,\"description\":%s,"
-				"\"creation\":%s,\"previewURL\":%s}",
-				mod.id,
-				JsonEscape(mod.title).c_str(),
-				JsonEscape(mod.ownerPersonaName).c_str(),
-				JsonEscape(mod.description).c_str(),
-				JsonEscape(created).c_str(),
-				JsonEscape(mod.previewURL).c_str()
-			);
+			Pipe_Write("%llu", mod.id);
+			Pipe_Write("%s", mod.title.c_str());
+			Pipe_Write("%s", mod.ownerPersonaName.c_str());
+			Pipe_Write("%s", mod.description.c_str());
+			Pipe_Write("%s", ToIso8601UTC(mod.timeCreated).c_str());
+			Pipe_Write("%s", mod.previewURL.c_str());
 		}
 		Pipe_Write("\x04");
 	}

@@ -8,7 +8,7 @@ project ("AVIAO3")
 #todo: make these paths relative to the CMAKE project
 option(TEST_BUILD "Build local test version" OFF)
 option(STEAM_TEST "Disables Steam game validation" ON)
-option(CONSOLE_BUILD "Enables console" ON)
+option(CONSOLE_BUILD "Enables console" OFF)
 
 if(TEST_BUILD)
     add_definitions(-DCURRENT_DIRECTORY=\"C:/Repos/spikedão/Windows/VisualStudio\")

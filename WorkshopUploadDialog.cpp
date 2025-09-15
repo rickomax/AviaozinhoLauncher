@@ -103,7 +103,7 @@ LRESULT CALLBACK WorkshopUploadDialog::WndProc(HWND hwnd, UINT msg, WPARAM wPara
         state->hTitle = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP,
             L + 110, y, W, H, hwnd, (HMENU)ID_UP_TITLE_EDIT, NULL, NULL);
         SendMessage(state->hTitle, WM_SETFONT, (WPARAM)f, TRUE);
-        SendMessage(state->hTitle, EM_SETLIMITTEXT, 20, 0);
+        SendMessage(state->hTitle, EM_SETLIMITTEXT, 300, 0);
         y += H + GAP;
 
         // Description
@@ -111,7 +111,7 @@ LRESULT CALLBACK WorkshopUploadDialog::WndProc(HWND hwnd, UINT msg, WPARAM wPara
         state->hDesc = CreateWindow("EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOVSCROLL | ES_MULTILINE | ES_WANTRETURN | WS_TABSTOP,
             L + 110, y, W, 80, hwnd, (HMENU)ID_UP_DESC_EDIT, NULL, NULL);
         SendMessage(state->hDesc, WM_SETFONT, (WPARAM)f, TRUE);
-        SendMessage(state->hDesc, EM_SETLIMITTEXT, 150, 0);
+        SendMessage(state->hDesc, EM_SETLIMITTEXT, 300, 0);
         y += 80 + GAP;
 
         // Preview image
