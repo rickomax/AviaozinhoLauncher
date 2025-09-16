@@ -5,11 +5,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project ("AVIAO3")
 
+#todo: make these paths relative to the CMAKE project
 option(TEST_BUILD "Build local test version" OFF)
 option(STEAM_TEST "Disables Steam game validation" ON)
 option(CONSOLE_BUILD "Enables console" OFF)
 
-#todo: make these paths relative to the CMAKE project ahd remove hand-made values
 if(TEST_BUILD)
     add_definitions(-DCURRENT_DIRECTORY=\"C:/Repos/spikedão/Windows/VisualStudio\")
     add_definitions(-DRELATIVE_BASEDIR=\"../../../\")
@@ -38,7 +38,7 @@ add_definitions(-DREGISTRYKEY=L\"Software\\Joeveno\\Aviao\")
 add_definitions(-DPIPE_NAME=\"\\\\\\\\.\\\\pipe\\\\Aviaozinho\")
 add_definitions(-DSTEAM_APP_ID=3191050)
 
-add_executable (AVIAO3 "Pipe.c" "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp" resource.rc)
+add_executable (AVIAO3 "Pipe.c"  "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp" resource.rc)
 
 target_link_libraries(AVIAO3 steam_api64)
 
