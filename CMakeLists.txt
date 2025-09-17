@@ -7,7 +7,7 @@ project ("AVIAO3")
 
 #todo: make these paths relative to the CMAKE project
 option(TEST_BUILD "Build local test version" OFF)
-option(STEAM_TEST "Disables Steam game validation" ON)
+option(STEAM_TEST "Disables Steam game validation" OFF)
 option(CONSOLE_BUILD "Enables console" OFF)
 
 if(TEST_BUILD)
@@ -41,6 +41,22 @@ add_definitions(-DSTEAM_APP_ID=3191050)
 add_executable (AVIAO3 "Pipe.c"  "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp" resource.rc)
 
 target_link_libraries(AVIAO3 steam_api64)
+
+if (WIN32)
+  if (MSVC)
+    if (CONSOLE_BUILD)
+      target_link_options(AVIAO3 PRIVATE "/SUBSYSTEM:CONSOLE")
+    else()
+      target_link_options(AVIAO3 PRIVATE "/SUBSYSTEM:WINDOWS")
+    endif()
+  else()
+    if (CONSOLE_BUILD)
+      target_link_options(AVIAO3 PRIVATE -mconsole)
+    else()
+      target_link_options(AVIAO3 PRIVATE -mwindows)
+    endif()
+  endif()
+endif()
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/languages.txt DESTINATION ${OUTPUT_DIR}/)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/bin/win64/ DESTINATION ${OUTPUT_DIR}/)

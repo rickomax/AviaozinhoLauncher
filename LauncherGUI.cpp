@@ -20,16 +20,9 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 #else
-int main(int argc, char* argv[]) {
-    HWND consoleWindow = GetConsoleWindow();
-    if (consoleWindow != NULL) {
-        ShowWindow(consoleWindow, SW_HIDE);
-    }
-
-    LauncherGUI launcher(GetModuleHandle(NULL));
-    if (!launcher.Initialize()) {
-        return 1;
-    }
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+    LauncherGUI launcher(hInstance);
+    if (!launcher.Initialize()) return 1;
     launcher.Run();
     return 0;
 }
