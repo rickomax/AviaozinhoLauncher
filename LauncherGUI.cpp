@@ -1,5 +1,4 @@
 #include "LauncherGUI.h"
-#include "WorkshopUploadDialog.h"
 
 using namespace std;
 
@@ -176,17 +175,16 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 pThis->hInstance,
                 NULL
             );
-
             auto languageMap = read_kv_pairs("languages.txt");
             for (auto pair : languageMap) {
                 SendMessage(pThis->hComboBox, CB_ADDSTRING, 0, (LPARAM)pair.first.c_str());
             }
-            DWORD selectedIndex;
-            ReadDwordFromRegistry(selectedIndex, "language");
+            auto settings = read_kv_pairs("settings.txt");
+            string selectedIndexText = find_value_or_default(settings, "language", "0");
+            DWORD selectedIndex = atoi(selectedIndexText.c_str());
             if (selectedIndex >= 0 && selectedIndex < languageMap.size()) {
                 SendMessage(pThis->hComboBox, CB_SETCURSEL, selectedIndex, 0);
             }
-
             // NEW: "Upload to Workshop" button (to the left of the launch button)
             CreateWindow(
                 "BUTTON",
@@ -270,7 +268,10 @@ void LauncherGUI::LaunchGameWithLanguage() {
         }
 #endif
 
-        WriteDwordToRegistry(index, "language");
+        vector<pair<string, string>> settings{
+            {"language", to_string(index)}
+        };
+        write_kv_pairs("settings.txt", settings);
 
         auto languageMap = read_kv_pairs("languages.txt");
         string language_file = languageMap[index].second;
@@ -278,7 +279,7 @@ void LauncherGUI::LaunchGameWithLanguage() {
         string executable_path = GAMEEXECUTABLE;
         string command_line = executable_path + " -language " + language_file;
 
-        ShowWindow(hwndMain, SW_HIDE);
+        //ShowWindow(hwndMain, SW_HIDE);
 
         if (!LaunchGame(command_line)) {
             cerr << "Error launching game\n";

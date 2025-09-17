@@ -7,8 +7,8 @@
 #include "Game.h"
 #include "Pipe.h"
 #include "Request.h"
-#include "ConfigReader.h"
-#include "Registry.h"
+#include "Config.h"
+#include "WorkshopUploadDialog.h"
 
 class LauncherGUI {
 public:
