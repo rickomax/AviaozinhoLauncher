@@ -5,11 +5,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project ("AVIAO3")
 
-#todo: make these paths relative to the CMAKE project
 option(TEST_BUILD "Build local test version" OFF)
 option(STEAM_TEST "Disables Steam game validation" OFF)
 option(CONSOLE_BUILD "Enables console" OFF)
 
+#todo: make these paths relative to the CMAKE project
 if(TEST_BUILD)
     add_definitions(-DCURRENT_DIRECTORY=\"C:/Repos/spikedão/Windows/VisualStudio\")
     add_definitions(-DRELATIVE_BASEDIR=\"../../../\")
