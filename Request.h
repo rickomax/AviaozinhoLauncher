@@ -173,7 +173,6 @@ void ParseRequest(HWND hwndMain) {
 
 			while (!downloader.IsItemInstalled(*value, nullptr)) {
 				downloader.PumpCallbacks();
-				// std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			}
 
 			std::string path;
