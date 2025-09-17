@@ -1,4 +1,3 @@
-// Uploader.cpp
 #include "Uploader.h"
 #include <algorithm>
 #include <sstream>
@@ -11,7 +10,6 @@
 
 namespace fs = std::filesystem;
 
-// ---- helpers ----
 static std::string ToLower(std::string s) {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)std::tolower(c); });
     return s;
@@ -32,7 +30,6 @@ std::vector<std::string> SplitTags(const std::string& tags) {
     return out;
 }
 
-// ---------- NEW: forbidden-files scan ----------
 static bool IsForbiddenExt(const std::string& extLower)
 {
     // Windows executable/script-ish types we want to block
@@ -91,7 +88,6 @@ static bool FindForbiddenFiles(const fs::path& root,
     return !outOffenders.empty();
 }
 
-// ---- class ----
 Uploader::Uploader(AppId_t appID,
     std::string contentDir,
     std::string previewPath,
@@ -150,7 +146,6 @@ bool Uploader::Preflight() {
         return false;
     }
 
-    // ---------- NEW: scan for forbidden files ----------
     {
         std::vector<fs::path> offenders;
         if (FindForbiddenFiles(contentPath, offenders)) {
@@ -161,7 +156,6 @@ bool Uploader::Preflight() {
             return false;
         }
     }
-    // -----------------------------------------------
 
     // Validate preview file exists and looks like .png/.jpg
     fs::path prevPath = fs::u8path(m_previewUtf8);
