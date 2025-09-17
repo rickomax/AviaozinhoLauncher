@@ -33,7 +33,6 @@ std::vector<std::string> SplitTags(const std::string& tags) {
 static bool IsForbiddenExt(const std::string& extLower)
 {
 	// Windows executable/script-ish types we want to block
-	// (extend as needed)
 	static const char* kBad[] = {
 		".exe", ".dll", ".ocx", ".sys", ".scr", ".com",
 		".msi", ".msp",
@@ -156,7 +155,7 @@ bool Uploader::Preflight() {
 		m_error = "Title required (<=128 chars).";
 		return false;
 	}
-	if (m_descUtf8.size() > 8000) { // Steam allows long descriptions; keep generous
+	if (m_descUtf8.size() > 8000) {
 		m_error = "Description too long.";
 		return false;
 	}

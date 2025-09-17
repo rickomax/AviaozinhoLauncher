@@ -195,7 +195,7 @@ LRESULT CALLBACK WorkshopUploadDialog::WndProc(HWND hwnd, UINT msg, WPARAM wPara
             EnableWindow(st->hCancel, FALSE);
             SetWindowText(st->hStatus, "Uploading...");
 
-            // Start uploader (non-blocking, assumes SteamAPI already initialized by the launcher)
+            // Start uploader
             std::vector<std::string> tags; // no tags UI for now
             auto visibility = k_ERemoteStoragePublishedFileVisibilityPublic;
 
@@ -221,7 +221,7 @@ LRESULT CALLBACK WorkshopUploadDialog::WndProc(HWND hwnd, UINT msg, WPARAM wPara
                 PostMessage(GetParent(hwnd), WM_UPLOAD_DONE, IDCANCEL, 0);
                 DestroyWindow(hwnd);
             }
-            // If uploading, ignore cancel (or implement cancellation here)
+            // If uploading, ignore cancel
             return 0;
         }
         return 0;
@@ -333,7 +333,7 @@ bool WorkshopUploadDialog::BrowseForFolder(HWND owner, std::string& outPath)
         return false;
     }
 
-    // Pick folders with filesystem paths (no virtual items), and don't change our process CWD.
+    // Pick folders with filesystem paths (no virtual items)
     DWORD opts = 0;
     if (SUCCEEDED(pfd->GetOptions(&opts))) {
         opts |= FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_NOCHANGEDIR;

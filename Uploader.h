@@ -18,10 +18,8 @@ public:
         ERemoteStoragePublishedFileVisibility vis,
         PublishedFileId_t knownId = k_PublishedFileIdInvalid);
 
-    // Blocking (CLI-style)
     bool Run();
 
-    // Non-blocking (GUI)
     bool Start(bool manageSteamLifecycle);
     void PumpOnce();
     bool IsDone() const { return m_done; }
@@ -30,15 +28,13 @@ public:
     bool NeedsLegalAgreement() const { return m_needsAgreement; }
     const std::string& LastError() const { return m_error; }
 
-    // Progress: returns true if available; fills bytesProcessed/bytesTotal
     bool GetProgress(uint64_t& bytesProcessed, uint64_t& bytesTotal) const;
 
 private:
-    bool Preflight();                       // validate paths, encoding, emptiness
+    bool Preflight();
     void BeginUpdate(PublishedFileId_t id);
     static const char* EResultToString(EResult r);
 
-    // Callbacks
     CCallResult<Uploader, CreateItemResult_t> m_callCreateItem;
     void OnCreateItem(CreateItemResult_t* p, bool ioFailure);
     CCallResult<Uploader, SubmitItemUpdateResult_t> m_callSubmit;
@@ -51,10 +47,8 @@ private:
     ERemoteStoragePublishedFileVisibility m_visibility;
     PublishedFileId_t m_knownId;
 
-    // Internal (UTF-8) copies used for Steam calls
     std::string m_contentDirUtf8, m_previewUtf8, m_titleUtf8, m_descUtf8;
 
-    // State
     bool m_done = false, m_success = false;
     bool m_started = false;
     bool m_manageSteam = true;
