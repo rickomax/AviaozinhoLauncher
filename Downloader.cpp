@@ -126,6 +126,7 @@ void Downloader::ExtractResults(UGCQueryHandle_t qh, uint32 numResultsReturned) 
         info.tagsTruncated = det.m_bTagsTruncated;
         info.timeCreated = det.m_rtimeCreated;
         info.timeUpdated = det.m_rtimeUpdated;
+        info.subscribed = (SteamUGC()->GetItemState(det.m_nPublishedFileId) & k_EItemStateSubscribed) != 0;
 
         if (det.m_rgchDescription) {
             info.description = det.m_rgchDescription;
@@ -248,3 +249,76 @@ void Downloader::OnItemInstalled(ItemInstalled_t* p) {
         m_installReady[p->m_nPublishedFileId] = true;
     }
 }
+
+bool Downloader::IsUpToDate(PublishedFileId_t id, std::string* installPathOut) const
+{
+    uint32 state = SteamUGC()->GetItemState(id);
+    const bool installed = (state & k_EItemStateInstalled) != 0;
+    const bool needsUpdate = (state & k_EItemStateNeedsUpdate) != 0;
+
+    if (installed && !needsUpdate) {
+        if (installPathOut) {
+            // Reuse existing helper to fetch the folder
+            const_cast<Downloader*>(this)->IsItemInstalled(id, installPathOut);
+        }
+        return true;
+    }
+    return false;
+}
+
+bool Downloader::IsSubscribed(PublishedFileId_t id) const
+{
+    uint32 state = SteamUGC()->GetItemState(id);
+    return (state & k_EItemStateSubscribed) != 0;
+}
+
+void Downloader::EnsureSubscribed(PublishedFileId_t id) const
+{
+    if (!IsSubscribed(id)) {
+        // Fire-and-forget; Steam will dedupe if already subscribed in another session.
+        SteamUGC()->SubscribeItem(id);
+    }
+}
+
+void Downloader::EnsureSubscribedAndDownload(PublishedFileId_t id, bool highPriority) const
+{
+    // 1) Subscribe if needed (no-op if already subscribed)
+    EnsureSubscribed(id);
+
+    // 2) If already installed & up-to-date, nothing to do
+    if (IsUpToDate(id, nullptr)) {
+        return;
+    }
+
+    // 3) Otherwise, trigger download/update
+    SteamUGC()->DownloadItem(id, highPriority);
+    // You'll get ItemInstalled_t when it finishes (you already handle that in OnItemInstalled).
+}
+
+bool Downloader::WaitUntilInstalled(PublishedFileId_t id, uint32 timeoutMs)
+{
+    using namespace std::chrono;
+    const auto deadline = steady_clock::now() + milliseconds(timeoutMs);
+
+    // Fast path: already up-to-date
+    if (IsUpToDate(id, nullptr)) return true;
+
+    // If a download isn't in-flight yet, start it (auto-subscribes)
+    uint32 state = SteamUGC()->GetItemState(id);
+    if (!(state & (k_EItemStateDownloadPending | k_EItemStateDownloading))) {
+        EnsureSubscribedAndDownload(id, /*highPriority=*/true);
+    }
+
+    // Pump callbacks until we see ItemInstalled or the state flips to up-to-date
+    for (;;) {
+        if (IsUpToDate(id, nullptr)) return true;
+        if (steady_clock::now() >= deadline) return false;
+
+        // Also accept your existing install-ready flag as a signal
+        auto it = m_installReady.find(id);
+        if (it != m_installReady.end() && it->second) return true;
+
+        PumpCallbacks(); // sleeps 5ms internally
+    }
+}
+

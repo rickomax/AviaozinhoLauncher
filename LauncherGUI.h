@@ -16,6 +16,7 @@ public:
     ~LauncherGUI();
     bool Initialize();
     void Run();
+    void LaunchGameWithLanguage();
 
 private:
     HINSTANCE hInstance;
@@ -24,8 +25,7 @@ private:
     HWND hLaunchButton;
     HBITMAP hBackground;
     filesystem::path workingDirectory;
-    bool InitializeSteamAndPipe();
+    bool InitializeSteam();
     void Cleanup();
-    void LaunchGameWithLanguage();
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

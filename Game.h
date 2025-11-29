@@ -15,7 +15,6 @@ bool LaunchGame(const std::string& gamePath)
         return false;
     }
 
-    // Make a writable copy because CreateProcessA wants a modifiable char buffer.
     std::string cmdLine = gamePath;
 
     ZeroMemory(&si, sizeof(si));
@@ -28,7 +27,7 @@ bool LaunchGame(const std::string& gamePath)
         TRUE,                         // inherit handles
         0,                            // creation flags
         nullptr,                      // environment (inherit)
-        CURRENT_DIRECTORY,            // starting directory
+        RELATIVE_BASEDIR,             // starting directory
         &si,
         &pi))
     {
@@ -39,8 +38,15 @@ bool LaunchGame(const std::string& gamePath)
     return true;
 }
 
-void CloseGame()
+bool IsGameRunning()
 {
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    if (!pi.hProcess) {
+        return false;
+    }
+    DWORD exitCode = 0;
+    if (!GetExitCodeProcess(pi.hProcess, &exitCode))
+    {
+        return false;
+    }
+    return (exitCode == STILL_ACTIVE);
 }

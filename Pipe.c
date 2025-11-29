@@ -10,9 +10,25 @@ char Pipe_Create(void) {
         PIPE_NAME,
         PIPE_ACCESS_DUPLEX,
         PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-        1, PIPE_BUFFER_SIZE, PIPE_BUFFER_SIZE, 0, NULL
+        PIPE_UNLIMITED_INSTANCES,
+        PIPE_BUFFER_SIZE, 
+        PIPE_BUFFER_SIZE,
+        0,
+        NULL
     );
     return pipe_handle != INVALID_HANDLE_VALUE;
+}
+
+DWORD Pipe_AvailableBytes(void)
+{
+    if (pipe_handle == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
+    DWORD bytesAvailable = 0;
+    if (!PeekNamedPipe(pipe_handle, NULL, 0, NULL, &bytesAvailable, NULL)) {
+        return 0;
+    }
+    return bytesAvailable;
 }
 
 char Pipe_ConnectToNew(void) {
@@ -23,7 +39,11 @@ char Pipe_ConnectToExisting(void) {
     pipe_handle = CreateFile(
         PIPE_NAME,
         GENERIC_READ | GENERIC_WRITE,
-        0, NULL, OPEN_EXISTING, 0, NULL
+        0, 
+        NULL, 
+        OPEN_EXISTING,
+        0, 
+        NULL
     );
     if (pipe_handle != INVALID_HANDLE_VALUE) {
         DWORD mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;

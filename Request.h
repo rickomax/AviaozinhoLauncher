@@ -15,16 +15,17 @@
 #include <shlobj.h>
 
 #include "steam/steam_api.h"
-#include "pipe.h"
+#include "Pipe.h"
 #include "Downloader.h"
+#include "Static.h"
+#include "NetPipe.h"
+#include "SteamProtocol.h"
 
 #define COMMAND_DELIMITER ' '
 
 using namespace std;
 
-
-std::optional<std::string>
-FindSingleBspFilename(const std::filesystem::path& folder)
+std::optional<std::string> FindSingleBspFilename(const std::filesystem::path& folder)
 {
 	namespace fs = std::filesystem;
 
@@ -36,7 +37,7 @@ FindSingleBspFilename(const std::filesystem::path& folder)
 	std::optional<std::string> found;
 
 	for (const fs::directory_entry& de : fs::directory_iterator(folder, ec)) {
-		if (ec) return std::nullopt;                 // permissions, etc.
+		if (ec) return std::nullopt;
 
 		if (!de.is_regular_file(ec)) continue;
 
@@ -46,14 +47,13 @@ FindSingleBspFilename(const std::filesystem::path& folder)
 
 		if (ext == ".bsp") {
 			if (found.has_value()) {
-				// More than one BSP -> not a single unique file
 				return std::nullopt;
 			}
-			found = de.path().filename().string();   // e.g., "map.bsp"
+			found = de.path().filename().string(); 
 		}
 	}
 
-	return found;  // nullopt if zero or >1 .bsp files
+	return found;
 }
 
 bool ShellCopyFile(const std::filesystem::path& fromRel,
@@ -73,14 +73,13 @@ bool ShellCopyFile(const std::filesystem::path& fromRel,
 
 		SHFILEOPSTRUCTW op{};
 		op.wFunc = FO_COPY;
-		op.pFrom = fromBuf.data(); // double-null terminated
+		op.pFrom = fromBuf.data();
 		op.pTo = toStr.c_str();
 		op.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR;
 
 		return SHFileOperationW(&op) == 0 && !op.fAnyOperationsAborted;
 	}
 
-	// Copy directory *contents*
 	fs::path starPattern = fromAbs / L"*";
 	std::wstring fromStar = starPattern.c_str();
 
@@ -91,7 +90,7 @@ bool ShellCopyFile(const std::filesystem::path& fromRel,
 
 	SHFILEOPSTRUCTW op{};
 	op.wFunc = FO_COPY;
-	op.pFrom = fromBuf.data(); // "<from>\\*\0\0"
+	op.pFrom = fromBuf.data();
 	op.pTo = toStr.c_str();
 	op.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR;
 
@@ -121,12 +120,15 @@ static std::string ToIso8601UTC(std::time_t t) {
 	return oss.str();
 }
 
-void ParseRequest(HWND hwndMain) {
+void PoolPipe(HWND hwndMain) {
+	if (Pipe_AvailableBytes() == 0 || !Pipe_Read()) {
+		return;
+	}
 	std::stringstream ss(pipe_buffer);
 	std::string token;
-
-	if (!std::getline(ss, token, COMMAND_DELIMITER)) return;
-
+	if (!std::getline(ss, token, COMMAND_DELIMITER)) {
+		return;
+	}
 	if (token == "unlock_achievement") {
 		std::string ach;
 		if (std::getline(ss, ach, COMMAND_DELIMITER)) {
@@ -166,21 +168,15 @@ void ParseRequest(HWND hwndMain) {
 				Pipe_Write("\x04");
 				return;
 			}
-
 			Downloader downloader(STEAM_APP_ID);
 			downloader.Init();
-			downloader.StartDownload((PublishedFileId_t)*value, false);
-
-			while (!downloader.IsItemInstalled(*value, nullptr)) {
-				downloader.PumpCallbacks();
-			}
-
+			downloader.EnsureSubscribedAndDownload((PublishedFileId_t)*value, false);
+			downloader.WaitUntilInstalled((PublishedFileId_t)*value);
 			std::string path;
 			if (downloader.IsItemInstalled(*value, &path)) {
 				std::filesystem::path baseDir = RELATIVE_BASEDIR;
 				std::filesystem::path gameDir = "workshop_" + idStr;
 				std::filesystem::path outDir = baseDir / gameDir;
-
 				if (ShellCopyFile(path, outDir.string())) {
 					Pipe_Write(gameDir.string().c_str());
 					std::filesystem::path mapDir = outDir / "maps";
@@ -209,7 +205,6 @@ void ParseRequest(HWND hwndMain) {
 			k_EUGCMatchingUGCType_Items,
 			200
 		);
-
 		for (WorkshopItemInfo& mod : mods) {
 			Pipe_Write("%llu", mod.id);
 			Pipe_Write("%s", mod.title.c_str());
@@ -217,6 +212,14 @@ void ParseRequest(HWND hwndMain) {
 			Pipe_Write("%s", mod.description.c_str());
 			Pipe_Write("%s", ToIso8601UTC(mod.timeCreated).c_str());
 			Pipe_Write("%s", mod.previewURL.c_str());
+			Pipe_Write(mod.subscribed ? "1" : "0");
+		}
+		Pipe_Write("\x04");
+	}
+	else if (token == "languages") {
+		for (auto& kvp : languageMap) {
+			Pipe_Write("%s", kvp.first.c_str());
+			Pipe_Write("localization/%s", kvp.second.c_str());
 		}
 		Pipe_Write("\x04");
 	}

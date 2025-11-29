@@ -20,6 +20,7 @@ struct WorkshopItemInfo {
     std::string       metadata;    
     uint32            timeCreated{};
     uint32            timeUpdated{};
+    bool              subscribed{};
 };
 
 class Downloader {
@@ -40,11 +41,15 @@ public:
     void StartDownload(PublishedFileId_t id, bool subscribe);
     bool IsItemInstalled(PublishedFileId_t id, std::string* installPathOut = nullptr);
     bool IsItemDownloading(PublishedFileId_t id, uint64* bytesDownloaded = nullptr, uint64* bytesTotal = nullptr);
+    bool IsUpToDate(PublishedFileId_t id, std::string* installPathOut = nullptr) const;
+    bool IsSubscribed(PublishedFileId_t id) const;
+    void EnsureSubscribed(PublishedFileId_t id) const;
+    void EnsureSubscribedAndDownload(PublishedFileId_t id, bool highPriority = true) const;
+    bool WaitUntilInstalled(PublishedFileId_t id, uint32 timeoutMs = 30000);
     void PumpCallbacks();
 
     const std::vector<WorkshopItemInfo>& Items() const { return m_items; }
 
-private:
     UGCQueryHandle_t BuildAllItemsQuery(
         uint32 page,
         EUGCQuery sort,
@@ -63,7 +68,6 @@ private:
     void ExtractResults(UGCQueryHandle_t qh, uint32 numResultsReturned);
 
     void ResolveOwnerNames(unsigned maxMillis = 1500);
-
 
 private:
     AppId_t m_appID = 0;

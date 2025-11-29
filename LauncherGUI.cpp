@@ -21,7 +21,9 @@ int main(int argc, char* argv[]) {
 #else
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
     LauncherGUI launcher(hInstance);
-    if (!launcher.Initialize()) return 1;
+    if (!launcher.Initialize()) {
+        return 1;
+    }
     launcher.Run();
     return 0;
 }
@@ -37,7 +39,7 @@ LauncherGUI::~LauncherGUI() {
 
 bool LauncherGUI::Initialize() {
     workingDirectory = filesystem::current_path();
-    if (!InitializeSteamAndPipe()) {
+    if (!InitializeSteam()) {
         return false;
     }
 
@@ -75,43 +77,47 @@ bool LauncherGUI::Initialize() {
         return false;
     }
 
-    ShowWindow(hwndMain, SW_SHOW);
     UpdateWindow(hwndMain);
+
+#ifdef NO_LAUNCHER
+    LaunchGameWithLanguage();
+#endif
 
     return true;
 }
 
-bool LauncherGUI::InitializeSteamAndPipe() {
+bool LauncherGUI::InitializeSteam() {
 #ifndef STEAM_TEST
     if (SteamAPI_RestartAppIfNecessary(STEAM_APP_ID)) {
         cerr << "Restarting through Steam\n";
         return false;
     }
 #endif
-
     if (!SteamAPI_Init()) {
         cerr << "Error initializing Steam\n";
         return false;
     }
-
-    if (!Pipe_Create()) {
-        cerr << "Error creating pipe\n";
-        SteamAPI_Shutdown();
+    if (!NetBackend_Setup()) {
         return false;
     }
-
     return true;
 }
 
 void LauncherGUI::Cleanup() {
     Pipe_Close();
+    NetPipe_Close();
     SteamAPI_Shutdown();
 }
 
 void LauncherGUI::Run() {
-    ShowWindow(hwndMain, SW_SHOW);
+    if (!SteamUtils()->IsSteamRunningOnSteamDeck()) {
+        ShowWindow(hwndMain, SW_SHOW);
+    }
+    else {
+        ShowWindow(hwndMain, SW_HIDE);
+        LaunchGameWithLanguage();
+    }
     UpdateWindow(hwndMain);
-
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
@@ -129,7 +135,6 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
     else {
         pThis = reinterpret_cast<LauncherGUI*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     }
-
     if (pThis) {
         switch (msg) {
         case WM_CREATE:
@@ -147,7 +152,6 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 pThis->hInstance,
                 NULL
             );
-
             CreateWindow(
                 "STATIC",
                 "Linguagem (Language):",
@@ -161,7 +165,6 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 pThis->hInstance,
                 NULL
             );
-
             pThis->hComboBox = CreateWindow(
                 "COMBOBOX",
                 "",
@@ -175,22 +178,21 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 pThis->hInstance,
                 NULL
             );
-            auto languageMap = read_kv_pairs("languages.txt");
+            languageMap = read_kv_pairs("languages.txt");
             for (auto pair : languageMap) {
                 SendMessage(pThis->hComboBox, CB_ADDSTRING, 0, (LPARAM)pair.first.c_str());
             }
-            auto settings = read_kv_pairs("settings.txt");
+            settings = read_kv_pairs("settings.txt");
             string selectedIndexText = find_value_or_default(settings, "language", "0");
             DWORD selectedIndex = atoi(selectedIndexText.c_str());
             if (selectedIndex >= 0 && selectedIndex < languageMap.size()) {
                 SendMessage(pThis->hComboBox, CB_SETCURSEL, selectedIndex, 0);
             }
-            // NEW: "Upload to Workshop" button (to the left of the launch button)
             CreateWindow(
                 "BUTTON",
                 "Workshop/Upload",
                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                WINDOW_WIDTH - 217 - 210,            // 200 width + 10px gap to the left of launch
+                WINDOW_WIDTH - 217 - 210, 
                 WINDOW_HEIGHT - 43,
                 200,
                 30,
@@ -199,8 +201,6 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 pThis->hInstance,
                 NULL
             );
-
-            // Existing launch button
             pThis->hLaunchButton = CreateWindow(
                 "BUTTON",
                 "Mandar Bala! (Let it Rip!)",
@@ -226,7 +226,6 @@ LRESULT CALLBACK LauncherGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
                 pThis->LaunchGameWithLanguage();
             }
             else if (LOWORD(wParam) == ID_UPLOAD_BUTTON) {
-                // Open modal upload window
                 WorkshopUploadDialog::ShowModal(hwnd, pThis->hInstance);
             }
             break;
@@ -263,9 +262,6 @@ void LauncherGUI::LaunchGameWithLanguage() {
 #ifdef CONSOLE_BUILD
         cout << "Working Directory:" << workingDirectory << endl;
         cout << "Game Executable:" << GAMEEXECUTABLE << endl;
-        if (CURRENT_DIRECTORY) {
-            cout << "Content Directory:" << CURRENT_DIRECTORY << endl;
-        }
 #endif
 
         vector<pair<string, string>> settings{
@@ -273,27 +269,39 @@ void LauncherGUI::LaunchGameWithLanguage() {
         };
         write_kv_pairs("settings.txt", settings);
 
-        auto languageMap = read_kv_pairs("languages.txt");
         string language_file = languageMap[index].second;
 
         string executable_path = GAMEEXECUTABLE;
         string command_line = executable_path + " -language " + language_file;
 
-        //ShowWindow(hwndMain, SW_HIDE);
-
         if (!LaunchGame(command_line)) {
             cerr << "Error launching game\n";
+            SteamAPI_Shutdown();
             return;
         }
 
+        Pipe_Create();
         if (!Pipe_ConnectToNew()) {
-            cerr << "Error connecting pipe\n";
+            cerr << "Error creating main pipe\n";
+            SteamAPI_Shutdown();
             return;
         }
 
-        while (Pipe_Read()) {
+        NetPipe_Create();
+        if (!NetPipe_ConnectToNew()) {
+            cerr << "Error creating network pipe\n";
+            SteamAPI_Shutdown();
+            return;
+        }
+
+        std::string connectStr = std::format("steam-conn|{}", static_cast<unsigned long long>(SteamUser()->GetSteamID().ConvertToUint64()));
+        cout << connectStr;
+
+        while (IsGameRunning()) {
             SteamAPI_RunCallbacks();
-            ParseRequest(hwndMain);
+            NetBackend_PumpPipe();
+            NetBackend_PollSteamMessages();
+            PoolPipe(hwndMain);
         }
 
         PostQuitMessage(0);

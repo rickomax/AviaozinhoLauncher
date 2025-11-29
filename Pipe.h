@@ -14,6 +14,7 @@ extern "C" {
 	extern DWORD pipe_bytes_written;
 
 	char Pipe_Create(void);
+	DWORD Pipe_AvailableBytes(void);
 	char Pipe_ConnectToNew(void);
 	char Pipe_ConnectToExisting(void);
 	char Pipe_Write(const char* format, ...);

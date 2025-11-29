@@ -5,20 +5,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project ("AVIAO3")
 
-option(TEST_BUILD "Build local test version" OFF)
-option(STEAM_TEST "Disables Steam game validation" OFF)
+option(TEST_BUILD "Build local test version" ON)
+option(STEAM_TEST "Disables Steam game validation" ON)
 option(CONSOLE_BUILD "Enables console" OFF)
+option(NO_LAUNCHER "No launcher" ON)
 
 #todo: make these paths relative to the CMAKE project
 if(TEST_BUILD)
-    add_definitions(-DCURRENT_DIRECTORY=\"C:/Repos/spikedão/Windows/VisualStudio\")
     add_definitions(-DRELATIVE_BASEDIR=\"../../../\")
     set(OUTPUT_DIR "C:/Repos/spikedão/Windows/VisualStudio/Build-quakespasm-sdl2/x64/${CMAKE_BUILD_TYPE}")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 else()
-    add_definitions(-DCURRENT_DIRECTORY=NULL)
     add_definitions(-DRELATIVE_BASEDIR=\"\")
 endif()
 
@@ -30,15 +29,20 @@ if (CONSOLE_BUILD)
     add_definitions(-DCONSOLE_BUILD)
 endif()
 
+if (NO_LAUNCHER)
+    add_definitions(-DNO_LAUNCHER)
+endif()
+
 include_directories("include")
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/win64)
 
 add_definitions(-DGAMEEXECUTABLE=\"AVIAO3GAME.EXE\")
 add_definitions(-DREGISTRYKEY=L\"Software\\Joeveno\\Aviao\")
 add_definitions(-DPIPE_NAME=\"\\\\\\\\.\\\\pipe\\\\Aviaozinho\")
+add_definitions(-DNETPIPE_NAME=\"\\\\\\\\.\\\\pipe\\\\AviaozinhoNet\")
 add_definitions(-DSTEAM_APP_ID=3191050)
 
-add_executable (AVIAO3 "Pipe.c"  "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp" resource.rc)
+add_executable (AVIAO3 resource.rc  "Pipe.c" "LauncherGUI.cpp" "Uploader.cpp" "Downloader.cpp" "WorkshopUploadDialog.cpp"  "Static.cpp" "NetPipe.c"  "SteamCallbacks.cpp" "NetBackend.cpp")
 
 target_link_libraries(AVIAO3 steam_api64)
 
