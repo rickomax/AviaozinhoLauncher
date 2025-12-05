@@ -5,7 +5,4 @@
 #include <format>
 #include "NetPipe.h"
 #include "Static.h"
-bool NetBackend_Setup();
-void NetBackend_OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* info);
-void NetBackend_PumpPipe();
-void NetBackend_PollSteamMessages();
+void gns_pumppipe(void);

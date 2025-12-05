@@ -20,7 +20,6 @@ public:
 
 private:
     HINSTANCE hInstance;
-    HWND hwndMain;
     HWND hComboBox;
     HWND hLaunchButton;
     HBITMAP hBackground;

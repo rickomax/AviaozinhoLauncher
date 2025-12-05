@@ -5,10 +5,13 @@ char   netpipe_buffer[NETPIPE_BUFFER_SIZE];
 DWORD  netpipe_bytes_read;
 DWORD  netpipe_bytes_written;
 
-char NetPipe_Create(void) {
+OVERLAPPED g_netov;
+HANDLE g_netevent = NULL;
+
+BOOL NetPipe_Create(void) {
     netpipe_handle = CreateNamedPipeA(
         NETPIPE_NAME,
-        PIPE_ACCESS_DUPLEX,
+        PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
         PIPE_UNLIMITED_INSTANCES,
         NETPIPE_BUFFER_SIZE,
@@ -16,7 +19,11 @@ char NetPipe_Create(void) {
         0,
         NULL
     );
-    return (netpipe_handle != INVALID_HANDLE_VALUE) ? 1 : 0;
+    if (netpipe_handle == INVALID_HANDLE_VALUE) return FALSE;
+    g_netevent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    ZeroMemory(&g_netov, sizeof(g_netov));
+    g_netov.hEvent = g_netevent;
+    return TRUE;
 }
 
 DWORD NetPipe_AvailableBytes(void)
@@ -31,11 +38,12 @@ DWORD NetPipe_AvailableBytes(void)
     return bytesAvailable;
 }
 
-char NetPipe_ConnectToNew(void) {
+BOOL NetPipe_ConnectToNew(void) {
     return ConnectNamedPipe(netpipe_handle, NULL);
 }
 
-char NetPipe_ConnectToExisting(void) {
+BOOL NetPipe_ConnectToExisting(void)
+{
     netpipe_handle = CreateFileA(
         NETPIPE_NAME,
         GENERIC_READ | GENERIC_WRITE,
@@ -45,15 +53,16 @@ char NetPipe_ConnectToExisting(void) {
         0,
         NULL
     );
-    if (netpipe_handle == INVALID_HANDLE_VALUE) {
-        return 0;
+    if (netpipe_handle != INVALID_HANDLE_VALUE) {
+
+        DWORD mode = PIPE_READMODE_BYTE | PIPE_WAIT;
+        SetNamedPipeHandleState(netpipe_handle, &mode, NULL, NULL);
     }
-    DWORD mode = PIPE_READMODE_BYTE;
-    SetNamedPipeHandleState(netpipe_handle, &mode, NULL, NULL);
-    return 1;
+
+    return netpipe_handle != INVALID_HANDLE_VALUE;
 }
 
-char NetPipe_Write(const void* data, DWORD size) {
+BOOL NetPipe_Write(const void* data, DWORD size) {
     const char* p = (const char*)data;
     DWORD total = 0;
     while (total < size) {
@@ -70,7 +79,7 @@ char NetPipe_Write(const void* data, DWORD size) {
     return 1;
 }
 
-char NetPipe_Read(void* data, DWORD size) {
+BOOL NetPipe_Read(void* data, DWORD size) {
     char* p = (char*)data;
     DWORD total = 0;
     while (total < size) {
@@ -94,3 +103,22 @@ void NetPipe_Close(void) {
         netpipe_handle = INVALID_HANDLE_VALUE;
     }
 }
+
+void NetPipe_BeginConnect(void) {
+    ResetEvent(g_netevent);
+    BOOL ok = ConnectNamedPipe(netpipe_handle, &g_netov);
+    if (!ok) {
+        DWORD err = GetLastError();
+        if (err == ERROR_PIPE_CONNECTED) {
+            SetEvent(g_netevent);
+        }
+    }
+}
+
+BOOL NetPipe_IsConnected(void) {
+    if (WaitForSingleObject(g_netevent, 0) == WAIT_OBJECT_0) {
+        return TRUE;
+    }
+    return FALSE;
+}
+

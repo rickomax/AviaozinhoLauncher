@@ -5,18 +5,25 @@ char pipe_buffer[PIPE_BUFFER_SIZE];
 DWORD pipe_bytes_read;
 DWORD pipe_bytes_written;
 
-char Pipe_Create(void) {
-    pipe_handle = CreateNamedPipe(
+OVERLAPPED g_ov;
+HANDLE g_event = NULL;
+
+BOOL Pipe_Create(void) {
+    pipe_handle = CreateNamedPipeA(
         PIPE_NAME,
-        PIPE_ACCESS_DUPLEX,
+        PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
         PIPE_UNLIMITED_INSTANCES,
-        PIPE_BUFFER_SIZE, 
+        PIPE_BUFFER_SIZE,
         PIPE_BUFFER_SIZE,
         0,
         NULL
     );
-    return pipe_handle != INVALID_HANDLE_VALUE;
+    if (pipe_handle == INVALID_HANDLE_VALUE) return FALSE;
+    g_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+    ZeroMemory(&g_ov, sizeof(g_ov));
+    g_ov.hEvent = g_event;
+    return TRUE;
 }
 
 DWORD Pipe_AvailableBytes(void)
@@ -31,18 +38,18 @@ DWORD Pipe_AvailableBytes(void)
     return bytesAvailable;
 }
 
-char Pipe_ConnectToNew(void) {
+BOOL Pipe_ConnectToNew(void) {
     return ConnectNamedPipe(pipe_handle, NULL);
 }
 
-char Pipe_ConnectToExisting(void) {
+BOOL Pipe_ConnectToExisting(void) {
     pipe_handle = CreateFile(
         PIPE_NAME,
         GENERIC_READ | GENERIC_WRITE,
-        0, 
-        NULL, 
+        0,
+        NULL,
         OPEN_EXISTING,
-        0, 
+        0,
         NULL
     );
     if (pipe_handle != INVALID_HANDLE_VALUE) {
@@ -52,7 +59,7 @@ char Pipe_ConnectToExisting(void) {
     return pipe_handle != INVALID_HANDLE_VALUE;
 }
 
-char Pipe_Write(const char* format, ...) {
+BOOL Pipe_Write(const char* format, ...) {
     va_list args;
     va_start(args, format);
     int newByteCount = vsnprintf(pipe_buffer, PIPE_BUFFER_SIZE, format, args);
@@ -60,12 +67,34 @@ char Pipe_Write(const char* format, ...) {
     return WriteFile(pipe_handle, pipe_buffer, newByteCount, &pipe_bytes_written, NULL);
 }
 
-char Pipe_Read(void) {
+BOOL Pipe_Read(void) {
     char result = ReadFile(pipe_handle, pipe_buffer, PIPE_BUFFER_SIZE - 1, &pipe_bytes_read, NULL);
     pipe_buffer[pipe_bytes_read] = '\0';
     return result;
 }
 
 void Pipe_Close(void) {
-    CloseHandle(pipe_handle);
+    if (pipe_handle != INVALID_HANDLE_VALUE) {
+        FlushFileBuffers(pipe_handle);
+        CloseHandle(pipe_handle);
+        pipe_handle = INVALID_HANDLE_VALUE;
+    }
+}
+
+void Pipe_BeginConnect(void) {
+    ResetEvent(g_event);
+    BOOL ok = ConnectNamedPipe(pipe_handle, &g_ov);
+    if (!ok) {
+        DWORD err = GetLastError();
+        if (err == ERROR_PIPE_CONNECTED) {
+            SetEvent(g_event);
+        }
+    }
+}
+
+BOOL Pipe_IsConnected(void) {
+    if (WaitForSingleObject(g_event, 0) == WAIT_OBJECT_0) {
+        return TRUE;
+    }
+    return FALSE;
 }

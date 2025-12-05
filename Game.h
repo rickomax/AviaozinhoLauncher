@@ -4,22 +4,18 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
+#include "Static.h"
 
-STARTUPINFOA si{};
-PROCESS_INFORMATION pi{};
-
-bool LaunchGame(const std::string& gamePath)
+bool LaunchGame(const std::string& gamePath, PROCESS_INFORMATION* pi)
 {
     if (gamePath.empty()) {
-        std::cerr << "Game executable is not defined\n";
+        ShowError("Game executable is not defined");
         return false;
     }
-
     std::string cmdLine = gamePath;
-
+    STARTUPINFOA si{};
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-
     if (!CreateProcessA(
         nullptr,                      // application name (use command line instead)
         cmdLine.data(),               // modifiable command line buffer
@@ -27,24 +23,22 @@ bool LaunchGame(const std::string& gamePath)
         TRUE,                         // inherit handles
         0,                            // creation flags
         nullptr,                      // environment (inherit)
-        RELATIVE_BASEDIR,             // starting directory
+        nullptr,                      // starting directory
         &si,
-        &pi))
+        pi))
     {
-        std::cerr << "Failed to launch game executable, error: " << GetLastError() << "\n";
         return false;
     }
-
     return true;
 }
 
-bool IsGameRunning()
+bool IsGameRunning(PROCESS_INFORMATION* pi)
 {
-    if (!pi.hProcess) {
+    if (!pi->hProcess) {
         return false;
     }
     DWORD exitCode = 0;
-    if (!GetExitCodeProcess(pi.hProcess, &exitCode))
+    if (!GetExitCodeProcess(pi->hProcess, &exitCode))
     {
         return false;
     }

@@ -1,0 +1,16 @@
+# ninja log v6
+8	90	7865965203621998	CMakeFiles/AVIAO3.dir/resource.rc.res	a54b3a9e032aad9d
+36	370	7865965204037437	CMakeFiles/AVIAO3.dir/NetPipe.c.obj	f08de265d382c2c5
+13	381	7865965203781350	CMakeFiles/AVIAO3.dir/Pipe.c.obj	d255409fa64d73b2
+28	1239	7865965203938771	CMakeFiles/AVIAO3.dir/WorkshopUploadDialog.cpp.obj	b85feea26d48b23a
+41	1381	7865965204057182	CMakeFiles/AVIAO3.dir/SteamCallbacks.cpp.obj	3b2aa0e57959218b
+32	1576	7865965203993195	CMakeFiles/AVIAO3.dir/Static.cpp.obj	141110c7d343ddb6
+46	1652	7865965204097234	CMakeFiles/AVIAO3.dir/NetBackend.cpp.obj	ffb8f4fd67a1c8fd
+24	1824	7865965203781350	CMakeFiles/AVIAO3.dir/Downloader.cpp.obj	6c29f5013f772166
+20	2110	7865965203781350	CMakeFiles/AVIAO3.dir/Uploader.cpp.obj	3bcbbdf632ca3167
+16	2605	7865965203781350	CMakeFiles/AVIAO3.dir/LauncherGUI.cpp.obj	bd67439bded99e64
+2605	3281	7865965229670652	E:/SteamLibrary/steamapps/common/AVIAOZIN3/AVIAO3.exe	7660e0d6e0f715ae
+10	1387	7865974961047650	CMakeFiles/AVIAO3.dir/NetBackend.cpp.obj	ffb8f4fd67a1c8fd
+1388	1895	7865974974737380	E:/SteamLibrary/steamapps/common/AVIAOZIN3/AVIAO3.exe	7660e0d6e0f715ae
+9	1117	7865978750482119	CMakeFiles/AVIAO3.dir/NetBackend.cpp.obj	ffb8f4fd67a1c8fd
+1118	1816	7865978761571916	E:/SteamLibrary/steamapps/common/AVIAOZIN3/AVIAO3.exe	7660e0d6e0f715ae

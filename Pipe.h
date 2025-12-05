@@ -13,13 +13,15 @@ extern "C" {
 	extern DWORD pipe_bytes_read;
 	extern DWORD pipe_bytes_written;
 
-	char Pipe_Create(void);
+	BOOL  Pipe_Create(void);
 	DWORD Pipe_AvailableBytes(void);
-	char Pipe_ConnectToNew(void);
-	char Pipe_ConnectToExisting(void);
-	char Pipe_Write(const char* format, ...);
-	char Pipe_Read(void);
+	BOOL  Pipe_ConnectToNew(void);
+	BOOL  Pipe_ConnectToExisting(void);
+	BOOL  Pipe_Write(const char* format, ...);
+	BOOL  Pipe_Read(void);
 	void Pipe_Close(void);
+	BOOL Pipe_IsConnected(void);
+	void Pipe_BeginConnect(void);
 #ifdef __cplusplus
 }
 #endif

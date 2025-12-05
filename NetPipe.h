@@ -13,13 +13,15 @@ extern "C" {
 	extern DWORD netpipe_bytes_read;
 	extern DWORD netpipe_bytes_written;
 
-	char NetPipe_Create(void);
+	BOOL NetPipe_Create(void);
 	DWORD NetPipe_AvailableBytes(void);
-	char NetPipe_ConnectToNew(void);
-	char NetPipe_ConnectToExisting(void);
-	char NetPipe_Write(const void* data, DWORD size);
-	char NetPipe_Read(void* data, DWORD size);
+	BOOL NetPipe_ConnectToNew(void);
+	BOOL NetPipe_ConnectToExisting(void);
+	BOOL NetPipe_Write(const void* data, DWORD size);
+	BOOL NetPipe_Read(void* data, DWORD size);
 	void NetPipe_Close(void);
+	BOOL NetPipe_IsConnected(void);
+	void NetPipe_BeginConnect(void);
 #ifdef __cplusplus
 }
 #endif

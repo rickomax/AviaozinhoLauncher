@@ -120,7 +120,7 @@ static std::string ToIso8601UTC(std::time_t t) {
 	return oss.str();
 }
 
-void PoolPipe(HWND hwndMain) {
+void PumpPipe() {
 	if (Pipe_AvailableBytes() == 0 || !Pipe_Read()) {
 		return;
 	}
@@ -133,10 +133,10 @@ void PoolPipe(HWND hwndMain) {
 		std::string ach;
 		if (std::getline(ss, ach, COMMAND_DELIMITER)) {
 			if (!SteamUserStats()->SetAchievement(ach.c_str())) {
-				std::cout << "Error setting achievement\n";
+				ShowError("Error setting achievement");
 			}
 			if (!SteamUserStats()->StoreStats()) {
-				std::cout << "Error storing stats\n";
+				ShowError("Error storing stats");
 			}
 		}
 	}
@@ -147,14 +147,14 @@ void PoolPipe(HWND hwndMain) {
 			if (std::getline(ss, valueStr, COMMAND_DELIMITER)) {
 				auto val = TryParseInt<int>(valueStr);
 				if (!val.has_value()) {
-					std::cout << "Invalid stat value\n";
+					ShowError("Invalid stat value");
 				}
 				else {
 					if (!SteamUserStats()->SetStat(statName.c_str(), *val)) {
-						std::cout << "Error setting stat\n";
+						ShowError("Error setting stat");
 					}
 					if (!SteamUserStats()->StoreStats()) {
-						std::cout << "Error storing stats\n";
+						ShowError("Error storing stats");
 					}
 				}
 			}
@@ -174,9 +174,8 @@ void PoolPipe(HWND hwndMain) {
 			downloader.WaitUntilInstalled((PublishedFileId_t)*value);
 			std::string path;
 			if (downloader.IsItemInstalled(*value, &path)) {
-				std::filesystem::path baseDir = RELATIVE_BASEDIR;
 				std::filesystem::path gameDir = "workshop_" + idStr;
-				std::filesystem::path outDir = baseDir / gameDir;
+				std::filesystem::path outDir = gameDir;
 				if (ShellCopyFile(path, outDir.string())) {
 					Pipe_Write(gameDir.string().c_str());
 					std::filesystem::path mapDir = outDir / "maps";
@@ -206,6 +205,9 @@ void PoolPipe(HWND hwndMain) {
 			200
 		);
 		for (WorkshopItemInfo& mod : mods) {
+			if (mod.banned) {
+				continue;
+			}
 			Pipe_Write("%llu", mod.id);
 			Pipe_Write("%s", mod.title.c_str());
 			Pipe_Write("%s", mod.ownerPersonaName.c_str());
@@ -222,5 +224,14 @@ void PoolPipe(HWND hwndMain) {
 			Pipe_Write("localization/%s", kvp.second.c_str());
 		}
 		Pipe_Write("\x04");
+	}
+	else if (token == "host") {
+		std::string commandLine = std::format("+toggleconsole +connect steam-conn|{}", static_cast<unsigned long long>(SteamUser()->GetSteamID().ConvertToUint64()));
+		SteamFriends()->SetRichPresence("connect", commandLine.c_str());
+		SteamFriends()->SetRichPresence("status", "In match");
+		SteamFriends()->SetRichPresence("steam_display", "#Status_InMatch");
+	}
+	else if (token == "unhost") {
+		SteamFriends()->ClearRichPresence();
 	}
 }
