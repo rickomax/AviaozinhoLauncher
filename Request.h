@@ -10,6 +10,7 @@
 #include <chrono>
 #include <ctime>
 #include <optional>
+#include <thread>
 
 #include <windows.h>
 #include <shlobj.h>
@@ -54,70 +55,6 @@ std::optional<std::string> FindSingleBspFilename(const std::filesystem::path& fo
 	}
 
 	return found;
-}
-
-bool ShellCopyFile(const std::filesystem::path& fromRel,
-	const std::filesystem::path& toRel)
-{
-	namespace fs = std::filesystem;
-
-	fs::path fromAbs = fs::absolute(fromRel);
-	fs::path toAbs = fs::absolute(toRel);
-
-	if (!fs::is_directory(fromAbs)) {
-		std::wstring fromStr = fromAbs.c_str();
-		std::vector<wchar_t> fromBuf(fromStr.size() + 2, L'\0');
-		std::copy(fromStr.begin(), fromStr.end(), fromBuf.begin());
-
-		std::wstring toStr = toAbs.c_str();
-
-		SHFILEOPSTRUCTW op{};
-		op.wFunc = FO_COPY;
-		op.pFrom = fromBuf.data();
-		op.pTo = toStr.c_str();
-		op.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR;
-
-		return SHFileOperationW(&op) == 0 && !op.fAnyOperationsAborted;
-	}
-
-	fs::path starPattern = fromAbs / L"*";
-	std::wstring fromStar = starPattern.c_str();
-
-	std::vector<wchar_t> fromBuf(fromStar.size() + 2, L'\0');
-	std::copy(fromStar.begin(), fromStar.end(), fromBuf.begin());
-
-	std::wstring toStr = toAbs.c_str();
-
-	SHFILEOPSTRUCTW op{};
-	op.wFunc = FO_COPY;
-	op.pFrom = fromBuf.data();
-	op.pTo = toStr.c_str();
-	op.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR;
-
-	return SHFileOperationW(&op) == 0 && !op.fAnyOperationsAborted;
-}
-
-template <typename IntT>
-static std::optional<IntT> TryParseInt(const std::string& s, int base = 10) {
-	try {
-		size_t idx = 0;
-		long long v = std::stoll(s, &idx, base);
-		if (idx == s.size()) return static_cast<IntT>(v);
-	}
-	catch (...) {}
-	return std::nullopt;
-}
-
-static std::string ToIso8601UTC(std::time_t t) {
-	std::tm gmt{};
-#ifdef _WIN32
-	gmtime_s(&gmt, &t);
-#else
-	gmt = *std::gmtime(&t);
-#endif
-	std::ostringstream oss;
-	oss << std::put_time(&gmt, "%Y-%m-%d");
-	return oss.str();
 }
 
 void PumpPipe() {
@@ -230,8 +167,43 @@ void PumpPipe() {
 		SteamFriends()->SetRichPresence("connect", commandLine.c_str());
 		SteamFriends()->SetRichPresence("status", "In match");
 		SteamFriends()->SetRichPresence("steam_display", "#Status_InMatch");
+		SteamMatchmaking()->CreateLobby(k_ELobbyTypePublic, 255);
+	}
+	else if (token == "lobby_update") {
+		if (lobbyId == 0) {
+			return;
+		}
+		std::string data;
+		if (std::getline(ss, data, COMMAND_DELIMITER)) {
+			SteamMatchmaking()->SetLobbyData(lobbyId, "name", data.c_str());
+		}
+		if (std::getline(ss, data, COMMAND_DELIMITER)) {
+			SteamMatchmaking()->SetLobbyData(lobbyId, "map", data.c_str());
+		}
+		if (std::getline(ss, data, COMMAND_DELIMITER)) {
+			SteamMatchmaking()->SetLobbyData(lobbyId, "clients", data.c_str());
+		}
+		if (std::getline(ss, data, COMMAND_DELIMITER)) {
+			SteamMatchmaking()->SetLobbyData(lobbyId, "maxc", data.c_str());
+		}
+		//const char* name = SteamFriends()->GetPersonaName();
+		//SteamMatchmaking()->SetLobbyData(lobbyId, "name", name);
+	}
+	else if (token == "server_list") {
+		serverMap.clear();
+		expectedLobbies = 0;
+		pendingLobbies = 0;
+		serverListRequestId++;
+		serverListInProgress = true;
+		SteamMatchmaking()->RequestLobbyList();
 	}
 	else if (token == "unhost") {
+		if (lobbyId == 0) {
+			return;
+		}
 		SteamFriends()->ClearRichPresence();
+		SteamMatchmaking()->SetLobbyJoinable(lobbyId, false);
+		SteamMatchmaking()->LeaveLobby(lobbyId);
+		lobbyId = 0;
 	}
 }
