@@ -2,8 +2,10 @@
 #include "Static.h"
 
 #include <cstdio>
-#include <cstdlib> 
+#include <cstdlib>
 #include <sstream>
+#include <format>
+#include <ctime>
 
 void SteamCallbacks::OnGameRichPresenceJoinRequested(GameRichPresenceJoinRequested_t* p)
 {
@@ -11,6 +13,19 @@ void SteamCallbacks::OnGameRichPresenceJoinRequested(GameRichPresenceJoinRequest
         return;
 
     commandLine = p->m_rgchConnect;
+}
+
+void SteamCallbacks::OnGameLobbyJoinRequested(GameLobbyJoinRequested_t* p)
+{
+    if (!p)
+        return;
+
+    pendingJoinLobbyId = p->m_steamIDLobby;
+
+    if (lobbyId != 0 && pendingJoinLobbyId.ConvertToUint64() == lobbyId)
+        return;
+
+    SteamMatchmaking()->JoinLobby(pendingJoinLobbyId);
 }
 
 void SteamCallbacks::OnLobbyCreated(LobbyCreated_t* p)
@@ -22,12 +37,48 @@ void SteamCallbacks::OnLobbyCreated(LobbyCreated_t* p)
     }
 
     lobbyId = p->m_ulSteamIDLobby;
-    CSteamID lid(p->m_ulSteamIDLobby);
+    CSteamID steamLobbyId(p->m_ulSteamIDLobby);
 
     const uint64_t hostId = SteamUser()->GetSteamID().ConvertToUint64();
-    SteamMatchmaking()->SetLobbyData(lobbyId, "host", std::to_string(hostId).c_str());
 
-    SteamMatchmaking()->SetLobbyJoinable(lid, true);
+    SteamMatchmaking()->SetLobbyData(steamLobbyId, "host", std::to_string(hostId).c_str());
+    SteamMatchmaking()->SetLobbyJoinable(steamLobbyId, true);
+
+    std::string rp = std::format("+toggleconsole +connect steam-conn|{}", hostId);
+    SteamFriends()->SetRichPresence("connect", rp.c_str());
+    SteamFriends()->SetRichPresence("status", "In match");
+    SteamFriends()->SetRichPresence("steam_display", "#Status_InMatch");
+
+    hostingLobby = true;
+}
+
+void SteamCallbacks::OnLobbyEnter(LobbyEnter_t* p)
+{
+    if (!p)
+        return;
+
+    CSteamID lid(p->m_ulSteamIDLobby);
+
+    if (hostingLobby && lobbyId != 0 && lid.ConvertToUint64() == lobbyId)
+    {
+        hostingLobby = false;
+        pendingJoinLobbyId = CSteamID();
+        return;
+    }
+
+    const CSteamID self = SteamUser()->GetSteamID();
+    const uint64_t selfId = self.ConvertToUint64();
+
+    const char* host = SteamMatchmaking()->GetLobbyData(lid, "host");
+    if (!host || !*host)
+        return;
+
+    const uint64_t hostId = std::strtoull(host, nullptr, 10);
+    if (hostId == 0 || hostId == selfId)
+        return;
+
+    commandLine = std::format("+toggleconsole +connect steam-conn|{}", hostId);
+    pendingJoinLobbyId = CSteamID();
 }
 
 void SteamCallbacks::OnLobbyMatchList(LobbyMatchList_t* p)
@@ -69,7 +120,6 @@ void SteamCallbacks::OnLobbyDataUpdate(LobbyDataUpdate_t* p)
     if (!serverListInProgress)
         return;
 
-    // Ignore callbacks from older list requests
     if (activeServerListRequestId != serverListRequestId)
         return;
 
@@ -78,31 +128,24 @@ void SteamCallbacks::OnLobbyDataUpdate(LobbyDataUpdate_t* p)
 
     auto it = serverMap.find(key);
     if (it == serverMap.end())
-    {
-        // Not in our current list (could be some unrelated update)
         return;
-    }
 
     ServerEntry& entry = it->second;
 
-    // Steam can fire LobbyDataUpdate more than once per lobby.
-    // With a map, we still need to decrement pending only once per lobby,
-    // so keep a per-entry flag.
     if (!entry.gotData)
     {
         entry.gotData = true;
         pendingLobbies--;
         if (pendingLobbies < 0)
-            pendingLobbies = 0; // safety
+            pendingLobbies = 0;
     }
 
-    const char* host = SteamMatchmaking()->GetLobbyData(lid, "host");     // host steamid string
+    const char* host = SteamMatchmaking()->GetLobbyData(lid, "host");
     const char* map = SteamMatchmaking()->GetLobbyData(lid, "map");
     const char* cli = SteamMatchmaking()->GetLobbyData(lid, "clients");
     const char* maxc = SteamMatchmaking()->GetLobbyData(lid, "maxc");
     const char* name = SteamMatchmaking()->GetLobbyData(lid, "name");
 
-    // Fill what we can. Don’t require host to exist.
     if (host && *host)
         entry.address = std::string("steam-conn|") + host;
     else
@@ -112,12 +155,8 @@ void SteamCallbacks::OnLobbyDataUpdate(LobbyDataUpdate_t* p)
     entry.map = map ? map : "";
     entry.clients = (cli && *cli) ? std::atoi(cli) : 0;
     entry.maxClients = (maxc && *maxc) ? std::atoi(maxc) : 0;
-
-    // Populate the extra fields QSSM expects (keep them stable even if you don't use them yet)
     entry.lobbyId = key;
 
-    // If you don't have any extra params/port, keep them empty/0.
-    // (Don't guess net_hostport here unless you're explicitly storing it.)
     if (entry.parameters.empty())
         entry.parameters = "";
 
@@ -140,27 +179,18 @@ void SteamCallbacks::OnLobbyDataUpdate(LobbyDataUpdate_t* p)
             first = false;
 
             json << "{";
-
             json << "\"hostname\":\"" << JsonEscape(s.hostname) << "\",";
-            
             json << "\"address\":\"" << JsonEscape(s.address) << "\",";
-
             json << "\"maxPlayers\":" << (s.maxClients > 0 ? s.maxClients : 0) << ",";
-
             json << "\"map\":\"" << JsonEscape(s.map) << "\",";
-
             json << "\"parameters\":\"" << JsonEscape(s.parameters) << "\",";
-
             json << "\"gameId\":" << 0 << ",";
-
             json << "\"port\":" << (s.port > 0 ? s.port : 0) << ",";
 
             char timebuf[20];
             std::time_t t = std::time(nullptr);
             std::tm tm;
             gmtime_s(&tm, &t);
-
-            // Exactly 19 chars: YYYY-MM-DDTHH:MM:SS
             std::strftime(timebuf, sizeof(timebuf), "%Y-%m-%dT%H:%M:%S", &tm);
 
             json << "\"timestamp\":\"" << timebuf << "\",";

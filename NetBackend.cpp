@@ -1,10 +1,10 @@
+#if false
 #include "NetBackend.h"
 #include "SteamProtocol.h"
 #include "steam/steam_api.h"
 #include <iostream>
 
 bool initialized = false;
-
 
 void gnsMessagesSessionFailed(SteamNetworkingMessagesSessionFailed_t* pInfo) {
     const SteamNetConnectionInfo_t& info = pInfo->m_info;
@@ -62,7 +62,6 @@ void gns_sendto(const NetPipeHeader header) {
 }
 
 void gns_recvfrom(const NetPipeHeader header) {
-    // int len = header.length;
     int s = header.socket;
     ISteamNetworkingMessage* pMsg = nullptr;
     int count = SteamNetworkingMessages()->ReceiveMessagesOnChannel(s, &pMsg, 1);
@@ -71,9 +70,6 @@ void gns_recvfrom(const NetPipeHeader header) {
         return;
     }
     int copyLen = (int)pMsg->m_cbSize;
-    //if (copyLen > len) {
-    //    copyLen = len;
-    //}
     uint64_t steamId = pMsg->m_identityPeer.GetSteamID64();
     WriteHeader(GNS_SUCCESS, s, steamId, pMsg->m_pData, copyLen);
     pMsg->Release();
@@ -104,3 +100,4 @@ void gns_pumppipe(void) {
         }
     }
 }
+#endif

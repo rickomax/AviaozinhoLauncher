@@ -29,6 +29,36 @@ static std::string Utf16ToUtf8(PWSTR ws)
 	return result;
 }
 
+void HandleCommandLine()
+{
+	if (commandLine.empty()) {
+		return;
+	}
+
+	const std::string key = "+connect_lobby";
+	auto pos = commandLine.find(key);
+	if (pos == std::string::npos)
+		return;
+
+	pos += key.size();
+	while (pos < commandLine.size() && commandLine[pos] == ' ')
+		++pos;
+
+	uint64_t lobbyU64 = 0;
+	while (pos < commandLine.size() && commandLine[pos] >= '0' && commandLine[pos] <= '9')
+	{
+		lobbyU64 = lobbyU64 * 10 + (uint64_t)(commandLine[pos] - '0');
+		++pos;
+	}
+
+	if (lobbyU64 == 0)
+		return;
+
+	commandLine.clear();
+
+	SteamMatchmaking()->JoinLobby(CSteamID(lobbyU64));
+}
+
 #ifdef CONSOLE_BUILD
 int main(int argc, char* argv[]) {
 	if (argc > 1) {
@@ -38,6 +68,7 @@ int main(int argc, char* argv[]) {
 	if (!launcher.Initialize()) {
 		return 1;
 	}
+	HandleCommandLine();
 	launcher.Run();
 	return 0;
 }
@@ -48,6 +79,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	if (!launcher.Initialize()) {
 		return 1;
 	}
+	HandleCommandLine();
 	launcher.Run();
 	return 0;
 }
@@ -91,7 +123,7 @@ bool LauncherGUI::Initialize() {
 
 	mainHwnd = CreateWindow(
 		"LauncherWindowClass",
-		"Aviãozinho do Tráfico 3",
+		GAMETITLEEX,
 		style,
 		x, y, windowWidth, windowHeight,
 		NULL, NULL, hInstance, this
@@ -120,7 +152,9 @@ bool LauncherGUI::InitializeSteam() {
 
 void LauncherGUI::Cleanup() {
 	Pipe_Close();
+#if false
 	NetPipe_Close();
+#endif
 	SteamAPI_Shutdown();
 }
 
@@ -298,12 +332,6 @@ void LauncherGUI::LaunchGameWithLanguage() {
 		}
 		Pipe_BeginConnect();
 
-		if (!NetPipe_Create()) {
-			ShowError("Error creating network pipe");
-			goto end;
-		}
-		NetPipe_BeginConnect();
-
 		PROCESS_INFORMATION pi;
 		if (!LaunchGame(command_line, &pi)) {
 			ShowError("Error launching game");
@@ -316,9 +344,6 @@ void LauncherGUI::LaunchGameWithLanguage() {
 			SteamAPI_RunCallbacks();
 			if (Pipe_IsConnected()) {
 				PumpPipe();
-			}
-			if (NetPipe_IsConnected()) {
-				gns_pumppipe();
 			}
 			if (!commandLine.empty()) {
 				TerminateProcess(pi.hProcess, EXIT_FAILURE);

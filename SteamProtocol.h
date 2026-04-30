@@ -1,3 +1,4 @@
+#if false
 #pragma once
 #include <stdint.h>
 
@@ -70,3 +71,4 @@ static NetPipeHeader ReadHeader(void* payload) {
 	}
 	return header;
 }
+#endif

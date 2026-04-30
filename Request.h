@@ -19,7 +19,6 @@
 #include "Pipe.h"
 #include "Downloader.h"
 #include "Static.h"
-#include "NetPipe.h"
 #include "SteamProtocol.h"
 
 #define COMMAND_DELIMITER ' '
@@ -146,11 +145,11 @@ void PumpPipe() {
 				continue;
 			}
 			Pipe_Write("%llu", mod.id);
-			Pipe_Write("%s", mod.title.c_str());
-			Pipe_Write("%s", mod.ownerPersonaName.c_str());
-			Pipe_Write("%s", mod.description.c_str());
-			Pipe_Write("%s", ToIso8601UTC(mod.timeCreated).c_str());
-			Pipe_Write("%s", mod.previewURL.c_str());
+			Pipe_Write("%.1023s", mod.title.c_str());
+			Pipe_Write("%.1023s", mod.ownerPersonaName.c_str());
+			Pipe_Write("%.1023s", mod.description.c_str());
+			Pipe_Write("%.1023s", ToIso8601UTC(mod.timeCreated).c_str());
+			Pipe_Write("%.1023s", mod.previewURL.c_str());
 			Pipe_Write(mod.subscribed ? "1" : "0");
 		}
 		Pipe_Write("\x04");
@@ -163,10 +162,6 @@ void PumpPipe() {
 		Pipe_Write("\x04");
 	}
 	else if (token == "host") {
-		std::string commandLine = std::format("+toggleconsole +connect steam-conn|{}", static_cast<unsigned long long>(SteamUser()->GetSteamID().ConvertToUint64()));
-		SteamFriends()->SetRichPresence("connect", commandLine.c_str());
-		SteamFriends()->SetRichPresence("status", "In match");
-		SteamFriends()->SetRichPresence("steam_display", "#Status_InMatch");
 		SteamMatchmaking()->CreateLobby(k_ELobbyTypePublic, 255);
 	}
 	else if (token == "lobby_update") {
@@ -186,8 +181,6 @@ void PumpPipe() {
 		if (std::getline(ss, data, COMMAND_DELIMITER)) {
 			SteamMatchmaking()->SetLobbyData(lobbyId, "maxc", data.c_str());
 		}
-		//const char* name = SteamFriends()->GetPersonaName();
-		//SteamMatchmaking()->SetLobbyData(lobbyId, "name", name);
 	}
 	else if (token == "server_list") {
 		serverMap.clear();
@@ -205,5 +198,10 @@ void PumpPipe() {
 		SteamMatchmaking()->SetLobbyJoinable(lobbyId, false);
 		SteamMatchmaking()->LeaveLobby(lobbyId);
 		lobbyId = 0;
+	}
+	else if (token == "get_steam_id") {
+		CSteamID steamID = SteamUser()->GetSteamID();
+		uint64_t steamId64 = steamID.ConvertToUint64();
+		Pipe_Write("%llu", steamId64);
 	}
 }

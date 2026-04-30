@@ -8,7 +8,6 @@
 
 #include "SteamCallbacks.h"
 #include "NetBackend.h"
-#include "NetPipe.h"
 
 struct ServerEntry
 {
@@ -29,7 +28,9 @@ struct ServerEntry
 
 extern HWND mainHwnd;
 
+#if false
 extern uint8_t netPayload[NETPIPE_BUFFER_SIZE];
+#endif
 
 extern std::vector<std::pair<std::string, std::string>> languageMap;
 extern std::vector<std::pair<std::string, std::string>> settings;
