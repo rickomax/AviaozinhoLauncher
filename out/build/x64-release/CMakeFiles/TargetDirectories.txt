@@ -1,3 +1,0 @@
-D:/Repos/AviaozinhoLauncher/out/build/x64-release/CMakeFiles/AVIAO3.dir
-D:/Repos/AviaozinhoLauncher/out/build/x64-release/CMakeFiles/edit_cache.dir
-D:/Repos/AviaozinhoLauncher/out/build/x64-release/CMakeFiles/rebuild_cache.dir
