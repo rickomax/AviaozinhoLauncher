@@ -45,8 +45,18 @@ if(BDD_PRE_4)
     add_definitions(-DBDDPRE4)
 endif()
 
-include_directories("include")
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/win64)
+set(STEAM_API_DIR "" CACHE PATH "Path to the Steam API directory (contains the 'steam' headers folder and the steam_api64 import library)")
+
+if(NOT STEAM_API_DIR)
+    message(FATAL_ERROR "STEAM_API_DIR is not set. Configure with -DSTEAM_API_DIR=<path to the Steam API directory>.")
+endif()
+
+if(NOT IS_DIRECTORY "${STEAM_API_DIR}")
+    message(FATAL_ERROR "STEAM_API_DIR does not point to an existing directory: ${STEAM_API_DIR}")
+endif()
+
+include_directories("${STEAM_API_DIR}")
+link_directories("${STEAM_API_DIR}")
 
 add_definitions(-DGAMEEXECUTABLE=\"AVIAO3GAME.EXE\")
 add_definitions(-DGAMETITLEEX=\"${GAMETITLEEX_VALUE}\")
@@ -83,12 +93,6 @@ if(WIN32)
         endif()
     endif()
 endif()
-
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/languages.txt DESTINATION ${OUTPUT_DIR}/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/bin/win64/ DESTINATION ${OUTPUT_DIR}/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/steam_appid.txt DESTINATION ${OUTPUT_DIR}/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/background.bmp DESTINATION ${OUTPUT_DIR}/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/QuakeSpasm.ico DESTINATION ${OUTPUT_DIR}/)
 
 if(CMAKE_VERSION VERSION_GREATER 3.12)
     set_property(TARGET AVIAO3 PROPERTY CXX_STANDARD 20)
