@@ -69,10 +69,10 @@ void PumpPipe() {
 		std::string ach;
 		if (std::getline(ss, ach, COMMAND_DELIMITER)) {
 			if (!SteamUserStats()->SetAchievement(ach.c_str())) {
-				ShowError("Error setting achievement");
+				cerr << "Error setting achievement\n";
 			}
 			if (!SteamUserStats()->StoreStats()) {
-				ShowError("Error storing stats");
+				cerr << "Error storing stats\n";
 			}
 		}
 	}
@@ -83,14 +83,14 @@ void PumpPipe() {
 			if (std::getline(ss, valueStr, COMMAND_DELIMITER)) {
 				auto val = TryParseInt<int>(valueStr);
 				if (!val.has_value()) {
-					ShowError("Invalid stat value");
+					cerr << "Invalid stat value\n";
 				}
 				else {
 					if (!SteamUserStats()->SetStat(statName.c_str(), *val)) {
-						ShowError("Error setting stat");
+						cerr << "Error setting stat\n";
 					}
 					if (!SteamUserStats()->StoreStats()) {
-						ShowError("Error storing stats");
+						cerr << "Error storing stats\n";
 					}
 				}
 			}
